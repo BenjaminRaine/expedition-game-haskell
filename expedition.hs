@@ -41,18 +41,20 @@ movedown tree line =
     return tree
 
 printtreemessage:: StoryTree -> ()
-printtreemessage tree = putStrLn(result tree)
+printtreemessage tree = do
+    putStrLn(result tree)
 
 
 printtreeoptions :: StoryTree -> ()
-printtreeoptions tree =
+printtreeoptions tree = do
     printtreechoice(option1)
     printtreechoice(option2)
     printtreechoice(option3)
 
 
 printtreechoice :: StoryTree -> ()
-printtreechoice tree = putStrLn(option tree)
+printtreechoice tree = do
+    putStrLn(option tree)
           
 -- Get player input
 getLineFixed =
