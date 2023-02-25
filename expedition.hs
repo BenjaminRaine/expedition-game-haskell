@@ -5,57 +5,79 @@ import System.IO
 -- Int Resource Changed, Int Change Amount
 -- Story Tree options 1, 2, 3
 data StoryTree = StoryLeaf {option :: String,
-                            result :: String}
+                            result :: String,
+                            reqresource :: Int,
+                            reqamount :: Int,
+                            changeresource :: Int,
+                            changeamount :: Int}
                | StoryNode {option :: String,
                             result :: String,
                             reqresource :: Int,
                             reqamount :: Int,
                             changeresource :: Int,
                             changeamount :: Int,
-                            option1 :: StoryTree,
-                            option2 :: StoryTree,
-                            option3 :: StoryTree}
+                            choice1 :: StoryTree,
+                            choice2 :: StoryTree,
+                            choice3 :: StoryTree}
 
 
 -- Basic loop of the game as we traverse the tree
 -- We print options, detect input, then traverse the tree 
-play :: StoryTree -> StoryTree
+play :: StoryTree -> IO StoryTree
 play tree =
    do
-      printtreemessage tree
-      printtreeoptions tree
+      displaytreemessage tree
+      displaytreeoptions tree
       line <- getLineFixed
       if (line `elem` ["1","2","3"]) -- We need to go back to check these are actually met.
         then do
-           newtree <- movedown tree line
-           play newtree
+           play (movedown tree line)
         else return tree
 
 
--- We move down to the selected option and
+-- We move down to the selected option and modify the resources
 movedown :: StoryTree -> String -> StoryTree
-movedown tree line =
-    -- if line == "num" get that storyTree
-    -- subtract the resource change
-    -- return the new option
-    return tree
+movedown tree "1" =
+    do
+        resourcechange (choice1 tree)
+        return (choice1 tree)
 
-printtreemessage:: StoryTree -> ()
-printtreemessage tree = do
+movedown tree "2" =
+    do
+        resourcechange (choice1 tree)
+        return (choice1 tree)
+
+movedown tree "3" = 
+    do
+        resourcechange (choice1 tree)
+        return (choice1 tree)
+
+
+-- Print the result at the passed position
+displaytreemessage:: StoryTree -> IO ()
+displaytreemessage tree = do
     putStrLn(result tree)
 
 
-printtreeoptions :: StoryTree -> ()
-printtreeoptions tree = do
-    printtreechoice(option1)
-    printtreechoice(option2)
-    printtreechoice(option3)
+-- Print the choices at the passed position
+displaytreeoptions :: StoryTree -> IO ()
+displaytreeoptions tree = do
+    displaytreechoice(choice1 tree)
+    displaytreechoice(choice2 tree)
+    displaytreechoice(choice3 tree)
 
 
-printtreechoice :: StoryTree -> ()
-printtreechoice tree = do
+-- Display the choice of passed node
+displaytreechoice :: StoryTree -> IO ()
+displaytreechoice tree = do
     putStrLn(option tree)
-          
+     
+
+-- Modify a resource value based on an input number and a value increase or decrease
+resourcechange :: StoryTree -> ()
+resourcechange = 1 -- need to implement resource management
+     
+
 -- Get player input
 getLineFixed =
    do
@@ -64,8 +86,6 @@ getLineFixed =
 
 
 -- Basic Nodes for Traversal Test (We should read from csv if there's time)
-
-
 
 
 main = do
