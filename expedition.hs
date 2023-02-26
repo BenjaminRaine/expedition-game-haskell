@@ -1,26 +1,41 @@
 -- CPSC 312 - 2023 - Twenty Questions in Haskell
 --  Copyright David Poole 2023, released on GNU General Public License
 
-module TwentyQs where
+module EverestEscape where
 
 import System.IO
 
-data QATree = QLeaf String
-            | QNode String QATree QATree
+import HashTreeDict
+
+-- Current location in the story, Health, Time, Ice pick
+-- also used at certain branches to check for the required state
+data State = State Path Int Double Bool    -- currentBranch, health, timeLeft, icePick
+               deriving (Show)
+
+-- planning for tree, have each branch be its own event, and include a "required state" to be at that branch.
+-- if the player doesn't have the required state, sent to a bad ending
+
+data Path = PathEnding String
+            | PathBranch String Path Path
        deriving (Show)
 
-initQATree = QNode "Is it living?"
-                (QNode "Is it a person?"
-                    (QLeaf "Justin Bieber")
-                    (QLeaf "J-35, one of the southern resident killer whales"))
-                (QNode "Is it a physical object?"
-                    (QLeaf "Vancouver")
-                    (QLeaf "CPSC 312"))
+-- do we even need this
+-- current state in the game, is the key, possible future paths is the value???
+-- type Mem = Dict State [Path]
 
-play :: QATree -> IO QATree
-play tree =
+initPath = PathBranch "Is it living?"
+                (PathBranch "Is it a person?"
+                    (PathEnding "Justin Bieber")
+                    (PathEnding "J-35, one of the southern resident killer whales"))
+                (PathBranch "Is it a physical object?"
+                    (PathEnding "Vancouver")
+                    (PathEnding "CPSC 312"))
+
+play :: Path -> State -> IO State
+play tree state =
+   let (currentBranch, health, timeLeft, icePick) = state in
    do
-      putStrLn "Do you want to play 20 questions?"
+      putStrLn "Congratulations! You've reached the summit of Mount Everest! You only have " ++ show timeLeft ++ "hours, "++show health" health points, and an ice pick to get you back down. Can you do it?"
       ans <- getLineFixed
       if (ans `elem` ["y","yes","ye","oui"])
         then do
@@ -29,39 +44,39 @@ play tree =
            play newtree
         else return tree
 
-askabout :: QATree -> IO QATree
-askabout (QLeaf ans) =
+askabout :: Path -> IO Path
+askabout (PathEnding ans) =
   do
     putStrLn("Is it "++ans++"?")
     line <- getLineFixed
     if (line `elem` ["y","yes","ye","oui"])
-       then return (QLeaf ans)
+       then return (PathEnding ans)
        else do
           putStrLn("What were you thinking of?")
           obj <- getLineFixed
           putStrLn("Give a question for which the answer is yes for "++obj++" and no for "++ans)
           quest <- getLineFixed
-          return (QNode quest (QLeaf obj) (QLeaf ans))
+          return (PathBranch quest (PathEnding obj) (PathEnding ans))
           
-askabout (QNode q yes no) =
+askabout (PathBranch q yes no) =
   do
     putStrLn(q)
     line <- getLineFixed
     if (line `elem` ["y","yes","ye","oui"])
        then do
             newyes <- (askabout yes)
-            return (QNode q newyes no)
+            return (PathBranch q newyes no)
        else do
             newno <- askabout no
-            return (QNode q yes newno)
+            return (PathBranch q yes newno)
 
 getLineFixed =
    do
      line <- getLine
      return (fixdel2 line)
      
-go :: IO QATree
-go = play initQATree
+go :: IO State
+go = play initPath (State initPath 10 8.0 True)
 
 ----- Two Implementations fo fixdel ----
 
