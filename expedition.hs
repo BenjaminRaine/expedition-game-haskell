@@ -37,20 +37,11 @@ play tree =
 
 -- We move down to the selected option and modify the resources
 movedown :: StoryTree -> String -> StoryTree
-movedown tree "1" =
-    do
-        resourcechange (choice1 tree)
-        return (choice1 tree)
+movedown tree "1" = choice1 tree
 
-movedown tree "2" =
-    do
-        resourcechange (choice2 tree)
-        return (choice2 tree)
+movedown tree "2" = choice2 tree
 
-movedown tree "3" = 
-    do
-        resourcechange (choice3 tree)
-        return (choice3 tree)
+movedown tree "3" = choice3 tree
 
 
 -- Print the result at the passed position
@@ -74,8 +65,9 @@ displaytreechoice tree = do
      
 
 -- Modify a resource value based on an input number and a value increase or decrease
-resourcechange :: StoryTree -> ()
-resourcechange = 1 -- need to implement resource management
+resourcechange :: StoryTree -> IO ()
+resourcechange tree = do
+    putStrLn("Need to implement resource management")
      
 
 -- Get player input
@@ -85,16 +77,6 @@ getLineFixed =
      return (fixdel line)
 
 
--- Basic Nodes for Traversal Test (We should read from csv if there's time)
-
-
-main = do
-    print("THIS COMPILES")
-
--- End of Basic Nodes -----------------------------------------------------
-
-
--- ...
 fixdel st
    | '\DEL' `elem` st = fixdel (remdel st)
    | otherwise = st
@@ -103,15 +85,29 @@ remdel (a:'\DEL':r) = r
 remdel (a:r) = a: remdel r
 
 
--- ...
-splitsep sep [] = [[]]
-splitsep sep (h:t)
-    | sep h = []: splitsep sep t
-    | otherwise = ((h:w):rest)
-                where w:rest = splitsep sep t
 
--- ...
-readcsv filename =
-  do
-    file <- readFile filename
-    return [splitsep (==',') line| line <- splitsep (=='\n') file]
+
+
+
+-- Basic Nodes for Traversal Test -----------------------------------------
+endnode :: StoryTree
+endnode = ("Any. This is an ending..." "The end." 0 0 0 0)
+
+firstchoice1 :: StoryTree
+firstchoice1 = "1. Jump" "Jumping..." 0 0 0 0 endnode endnode endnode
+
+firstchoice2 :: StoryTree
+firstchoice2 = "2. Run" "Running..." 0 0 0 0 endnode endnode endnode
+
+firstchoice3 :: StoryTree
+firstchoice3 = "3. Climb" "Climbing..." 0 0 0 0 endnode endnode endnode
+
+startnode :: StoryTree
+startnode = "" "You are on everest... lets get the fuck down" 0 0 0 0 firstchoice1 firstchoice2 firstchoice3
+
+
+
+main = do
+    play startnode
+
+-- End of Basic Nodes -----------------------------------------------------
