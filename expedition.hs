@@ -1,24 +1,50 @@
 import System.IO
 
+-- StoryTree Data Type -------------------------------------------------------------------------------------
 -- String Option, String Result
 -- Int Required Resource, Int Required Resource Amount
 -- Int Resource Changed, Int Change Amount
 -- Story Tree options 1, 2, 3
-data StoryTree = StoryLeaf {option :: String,
-                            result :: String,
-                            reqresource :: Int,
-                            reqamount :: Int,
-                            changeresource :: Int,
-                            changeamount :: Int}
-               | StoryNode {option :: String,
-                            result :: String,
-                            reqresource :: Int,
-                            reqamount :: Int,
-                            changeresource :: Int,
-                            changeamount :: Int,
-                            choice1 :: StoryTree,
-                            choice2 :: StoryTree,
-                            choice3 :: StoryTree}
+
+data StoryTree = StoryLeaf String String Int Int Int Int
+               | StoryNode String String Int Int Int Int StoryTree StoryTree StoryTree
+
+
+
+-- Getters (One for leaves and one for nodes) --
+getoption :: StoryTree -> String
+getoption (option result reqresource reqamount changeresource changeamount) = option
+getoption (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = option
+
+getresult :: StoryTree -> String
+getresult (option result reqresource reqamount changeresource changeamount) = result
+getresult (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = result
+
+getreqresource :: StoryTree -> Int
+getreqresource (option result reqresource reqamount changeresource changeamount) = reqresource
+getreqresource (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = reqresource
+
+getreqamount :: StoryTree -> Int
+getreqamount (option result reqresource reqamount changeresource changeamount) = reqamount
+getreqamount (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = reqamount
+
+getchangeresource :: StoryTree -> Int
+getchangeresource (option result reqresource reqamount changeresource changeamount) = changeresource
+getchangeresource (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = changeresource
+
+getchangeamount :: StoryTree -> Int
+getchangeamount (option result reqresource reqamount changeresource changeamount) = changeamount
+getchangeamount (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = changeamount
+
+getchoice1 :: StoryTree -> StoryTree
+getchoice1 (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = choice1
+
+getchoice2 :: StoryTree -> StoryTree
+getchoice2 (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = choice2
+
+getchoice3 :: StoryTree -> StoryTree
+getchoice3 (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = choice3
+---------------------------------------------------------------------------------------------------------------
 
 
 -- Basic loop of the game as we traverse the tree
@@ -37,31 +63,31 @@ play tree =
 
 -- We move down to the selected option and modify the resources
 movedown :: StoryTree -> String -> StoryTree
-movedown tree "1" = choice1 tree
+movedown tree "1" = getchoice1 tree
 
-movedown tree "2" = choice2 tree
+movedown tree "2" = getchoice2 tree
 
-movedown tree "3" = choice3 tree
+movedown tree "3" = getchoice3 tree
 
 
 -- Print the result at the passed position
 displaytreemessage:: StoryTree -> IO ()
 displaytreemessage tree = do
-    putStrLn(result tree)
+    putStrLn(getresult tree)
 
 
 -- Print the choices at the passed position
 displaytreeoptions :: StoryTree -> IO ()
 displaytreeoptions tree = do
-    displaytreechoice(choice1 tree)
-    displaytreechoice(choice2 tree)
-    displaytreechoice(choice3 tree)
+    displaytreechoice(getchoice1 tree)
+    displaytreechoice(getchoice2 tree)
+    displaytreechoice(getchoice3 tree)
 
 
 -- Display the choice of passed node
 displaytreechoice :: StoryTree -> IO ()
 displaytreechoice tree = do
-    putStrLn(option tree)
+    putStrLn(getoption tree)
      
 
 -- Modify a resource value based on an input number and a value increase or decrease
@@ -90,20 +116,15 @@ remdel (a:r) = a: remdel r
 
 
 -- Basic Nodes for Traversal Test -----------------------------------------
-endnode :: StoryTree
-endnode = ("Any. This is an ending..." "The end." 0 0 0 0)
+endnode = StoryLeaf ("Any. This is an ending..." "The end." 0 0 0 0)
 
-firstchoice1 :: StoryTree
-firstchoice1 = "1. Jump" "Jumping..." 0 0 0 0 endnode endnode endnode
+firstchoice1 = StoryNode ("1. Jump" "Jumping..." 0 0 0 0 endnode endnode endnode)
 
-firstchoice2 :: StoryTree
-firstchoice2 = "2. Run" "Running..." 0 0 0 0 endnode endnode endnode
+firstchoice2 = StoryNode ("2. Run" "Running..." 0 0 0 0 endnode endnode endnode)
 
-firstchoice3 :: StoryTree
-firstchoice3 = "3. Climb" "Climbing..." 0 0 0 0 endnode endnode endnode
+firstchoice3 = StoryNode ("3. Climb" "Climbing..." 0 0 0 0 endnode endnode endnode)
 
-startnode :: StoryTree
-startnode = "" "You are on everest... lets get the fuck down" 0 0 0 0 firstchoice1 firstchoice2 firstchoice3
+startnode = StoryNode ("" "You are on everest... lets get the fuck down" 0 0 0 0 firstchoice1 firstchoice2 firstchoice3)
 
 
 
