@@ -1,6 +1,13 @@
 import System.IO
 
+-- Right now the main issue with the whole thing is duplication of code for options "1" "2" "3"
+-- If there's time we could go back to create a StoryPath object of (StoryTree Int Int Int Int)
+-- Then change StoryNode to String String [StoryPath, StoryPath, StoryPath]
+
+
+
 -- StoryTree Data Type -------------------------------------------------------------------------------------
+
 -- String Option, String Result
 -- Int Required Resource, Int Required Resource Amount
 -- Int Resource Changed, Int Change Amount
@@ -57,28 +64,65 @@ getchangeamount3 (StoryNode option result reqresource reqamount choice1 changere
 ---------------------------------------------------------------------------------------------------------------
 
 
+
+-- Resources Data Type -----------------------------------------------------------
+
+-- Maybe we can make this slightly more elegant? This is basically a weird implementation of a fixed size [Int] at the moment
+-- We could also change this to use strings instead of numbers for identification
+-- Health, Time, Icepick
+
+data Resources = Resources Int Int Int
+
+getResource :: Resources -> Int -> Int
+getResource (Resources health time icepick) 1 = health
+
+getResource (Resources health time icepick) 2 = time
+
+getResource (Resources health time icepick) 3 = icepick
+
+
+changeResource :: Resources -> Int -> Int -> Resources
+changeResource (Resources health time icepick) 1 change = (Resources (health+change) time icepick)
+
+changeResource (Resources health time icepick) 2 change = (Resources health (time+change) icepick)
+
+changeResource (Resources health time icepick) 3 change = (Resources health time (icepick+change))
+
+----------------------------------------------------------------------------------
+
+
+
+-- Looping and Traversing --------------------------------------------------------
+
 -- Basic loop of the game as we traverse the tree
 -- We print options, detect input, then traverse the tree 
-play :: StoryTree -> IO StoryTree
-play tree =
+play :: (Resources, StoryTree) -> IO StoryTree
+play (resources, tree) =
    do
+      putStrLn("")
       displaytreemessage tree
+      putStrLn("")
       displaytreeoptions tree
       line <- getLineFixed
       if (line `elem` ["1","2","3"]) -- We need to go back to check these are actually met.
         then do
-           play (movedown tree line)
+           play (movedown resources tree line)
         else return tree
+	-- TODO: End on leaves
 
 
 -- We move down to the selected option and modify the resources
-movedown :: StoryTree -> String -> StoryTree
-movedown tree "1" = getchoice1 tree
+movedown :: Resources -> StoryTree -> String -> (Resources, StoryTree)
+movedown resources tree "1" = (traversechange resources tree "1", getchoice1 tree)
 
-movedown tree "2" = getchoice2 tree
+movedown resources tree "2" = (traversechange resources tree "2" , getchoice2 tree)
 
-movedown tree "3" = getchoice3 tree
+movedown resources tree "3" = (traversechange resources tree "3" , getchoice3 tree)
+--------------------------------------------------------------------------------------
 
+
+
+-- Displaying to terminal ------------------------------------------------------------
 
 -- Print the result at the passed position
 displaytreemessage:: StoryTree -> IO ()
@@ -98,13 +142,32 @@ displaytreeoptions tree = do
 displaytreechoice :: StoryTree -> IO ()
 displaytreechoice tree = do
     putStrLn(getoption tree)
+--------------------------------------------------------------------------------------
+
      
 
+-- Checking and Changing Resources ---------------------------------------------------
+
 -- Modify a resource value based on an input number and a value increase or decrease
-resourcechange :: StoryTree -> IO ()
-resourcechange tree = do
-    putStrLn("Need to implement resource management")
+traversechange :: Resources -> StoryTree -> String -> Resources
+traversechange resources tree "1" = resources
+traversechange resources tree "2" = resources
+traversechange resources tree "3" = resources
      
+
+-- Get an array of the nodes 
+--checkAvailableOptions :: Resources -> StoryTree -> [String]
+--checkAvailableOptions = []
+
+
+
+--checkRequirements :: Resources -> StoryTree -> String -> String
+--    checkRequirements resources node "1" = 
+
+-----------------------------------------------------------------------------------------
+
+
+-- Getting Player Input -----------------------------------------------------------------
 
 -- Get player input
 getLineFixed =
@@ -119,13 +182,12 @@ fixdel st
 remdel ('\DEL':r) = r
 remdel (a:'\DEL':r) = r
 remdel (a:r) = a: remdel r
-
-
-
-
+------------------------------------------------------------------------------------------
 
 
 -- Basic Nodes for Traversal Test -----------------------------------------
+startingresources = Resources 10 8 1
+
 endnode = StoryLeaf "Any. This is an ending..." "The end." 0 0
 
 firstchoice1 = StoryNode "1. Jump" "Jumping..." 0 0 endnode 0 0 endnode 0 0 endnode 0 0
@@ -139,6 +201,6 @@ startnode = StoryNode "" "You are on everest... lets get the fuck down" 0 0 firs
 
 
 main = do
-    play startnode
+    play (startingresources, startnode)
 
 -- End of Basic Nodes -----------------------------------------------------
