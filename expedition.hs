@@ -44,13 +44,13 @@ movedown tree "1" =
 
 movedown tree "2" =
     do
-        resourcechange (choice1 tree)
-        return (choice1 tree)
+        resourcechange (choice2 tree)
+        return (choice2 tree)
 
 movedown tree "3" = 
     do
-        resourcechange (choice1 tree)
-        return (choice1 tree)
+        resourcechange (choice3 tree)
+        return (choice3 tree)
 
 
 -- Print the result at the passed position
