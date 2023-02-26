@@ -1,68 +1,70 @@
 import System.IO
 
 -- Right now the main issue with the whole thing is duplication of code for options "1" "2" "3"
--- If there's time we could go back to create a StoryPath object of (StoryTree Int Int Int Int)
--- Then change StoryNode to String String [StoryPath, StoryPath, StoryPath]
+-- We could change the choices to be an [StoryPath], though then we need to successfully cast the line to an int
+-- If we do travel frequently to the same node through different paths should result be situation? and add string result to storypath
 
 
 
 -- StoryTree Data Type -------------------------------------------------------------------------------------
 
 -- String Option, String Result
--- Int Required Resource, Int Required Resource Amount
--- Int Resource Changed, Int Change Amount
--- Story Tree options 1, 2, 3
+-- StoryTree options 1, 2, 3 in the form of StoryPaths
 
-data StoryTree = StoryLeaf String String Int Int
-               | StoryNode String String Int Int StoryTree Int Int StoryTree Int Int StoryTree Int Int
+data StoryTree = StoryLeaf String String
+               | StoryNode String String StoryPath StoryPath StoryPath
 
-
-
--- Getters (Very Gross Deconstruction) --
+-- Getters --
+-- Get the choice of this node
 getoption :: StoryTree -> String
-getoption (StoryLeaf option result reqresource reqamount) = option
-getoption (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = option
+getoption (StoryLeaf option result) = option
+getoption (StoryNode option result choice1 choice2 choice3) = option
 
+-- Get the message at this node
 getresult :: StoryTree -> String
-getresult (StoryLeaf option result reqresource reqamount) = result
-getresult (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = result
+getresult (StoryLeaf option result) = result
+getresult (StoryNode option result choice1 choice2 choice3) = result
 
-getreqresource :: StoryTree -> Int
-getreqresource (StoryLeaf option result reqresource reqamount) = reqresource
-getreqresource (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = reqresource
+-- Get path 1 
+getchoice1 :: StoryTree -> StoryPath
+getchoice1 (StoryNode option result choice1 choice2 choice3) = choice1
 
-getreqamount :: StoryTree -> Int
-getreqamount (StoryLeaf option result reqresource reqamount) = reqamount
-getreqamount (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = reqamount
+-- Get path 2
+getchoice2 :: StoryTree -> StoryPath
+getchoice2 (StoryNode option result choice1 choice2 choice3) = choice2
 
-getchoice1 :: StoryTree -> StoryTree
-getchoice1 (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = choice1
+-- Get path 3
+getchoice3 :: StoryTree -> StoryPath
+getchoice3 (StoryNode option result choice1 choice2 choice3) = choice3
 
-getchangeresource1 :: StoryTree -> Int
-getchangeresource1 (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = changeresource1
+-- Get node past a particular path
+nodePastPath :: StoryTree -> String -> StoryTree
+nodePastPath tree "1" = getPathNode (getchoice1 tree)
+nodePastPath tree "2" = getPathNode (getchoice2 tree)
+nodePastPath tree "3" = getPathNode (getchoice3 tree)
+----------------------------------------------------------------------------------
 
-getchangeamount1 :: StoryTree -> Int
-getchangeamount1 (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = changeamount1
 
-getchoice2 :: StoryTree -> StoryTree
-getchoice2 (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = choice2
 
-getchangeresource2 :: StoryTree -> Int
-getchangeresource2 (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = changeresource2
+-- StoryPath Data Type -----------------------------------------------------------
 
-getchangeamount2 :: StoryTree -> Int
-getchangeamount2 (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = changeamount2
+-- StoryTree Node the Path leads to
+-- Int Required Resource, Int Required Amount, Int Resource Changed, Int Change Amount
 
-getchoice3 :: StoryTree -> StoryTree
-getchoice3 (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = choice3
+data StoryPath = StoryPath StoryTree Int Int Int Int
 
-getchangeresource3 :: StoryTree -> Int
-getchangeresource3 (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = changeresource3
+-- Get the node past the path
+getPathNode :: StoryPath -> StoryTree
+getPathNode (StoryPath tree rr ra rc ca) = tree
 
-getchangeamount3 :: StoryTree -> Int
-getchangeamount3 (StoryNode option result reqresource reqamount choice1 changeresource1 changeamount1 choice2 changeresource2 changeamount2 choice3 changeresource3 changeamount3) = changeamount3
----------------------------------------------------------------------------------------------------------------
+-- Get required to traverse
+getRequiredResource :: StoryPath -> (Int, Int)
+getRequiredResource (StoryPath tree rr ra rc ca) = (rr, ra)
 
+-- Get change caused by traversal
+getResourceChange :: StoryPath -> (Int, Int)
+getResourceChange (StoryPath tree rr ra rc ca) = (rc, ca)
+----------------------------------------------------------------------------------
 
 
 -- Resources Data Type -----------------------------------------------------------
@@ -73,20 +75,17 @@ getchangeamount3 (StoryNode option result reqresource reqamount choice1 changere
 
 data Resources = Resources Int Int Int
 
+-- Get current value of a requested resource
 getResource :: Resources -> Int -> Int
 getResource (Resources health time icepick) 1 = health
-
 getResource (Resources health time icepick) 2 = time
-
 getResource (Resources health time icepick) 3 = icepick
 
-
-changeResource :: Resources -> Int -> Int -> Resources
-changeResource (Resources health time icepick) 1 change = (Resources (health+change) time icepick)
-
-changeResource (Resources health time icepick) 2 change = (Resources health (time+change) icepick)
-
-changeResource (Resources health time icepick) 3 change = (Resources health time (icepick+change))
+-- Add change to a particular resource
+changeResource :: Resources -> (Int, Int) -> Resources
+changeResource (Resources health time icepick) (1, change) = (Resources (health+change) time icepick)
+changeResource (Resources health time icepick) (2, change) = (Resources health (time+change) icepick)
+changeResource (Resources health time icepick) (3, change) = (Resources health time (icepick+change))
 
 ----------------------------------------------------------------------------------
 
@@ -102,6 +101,7 @@ play (resources, tree) =
       putStrLn("")
       displaytreemessage tree
       putStrLn("")
+      displayResources resources
       displaytreeoptions tree
       line <- getLineFixed
       if (line `elem` ["1","2","3"]) -- We need to go back to check these are actually met.
@@ -113,11 +113,9 @@ play (resources, tree) =
 
 -- We move down to the selected option and modify the resources
 movedown :: Resources -> StoryTree -> String -> (Resources, StoryTree)
-movedown resources tree "1" = (traversechange resources tree "1", getchoice1 tree)
-
-movedown resources tree "2" = (traversechange resources tree "2" , getchoice2 tree)
-
-movedown resources tree "3" = (traversechange resources tree "3" , getchoice3 tree)
+movedown resources tree "1" = (traversechange resources (getchoice1 tree), nodePastPath tree "1")
+movedown resources tree "2" = (traversechange resources (getchoice2 tree), nodePastPath tree "2")
+movedown resources tree "3" = (traversechange resources (getchoice3 tree), nodePastPath tree "3")
 --------------------------------------------------------------------------------------
 
 
@@ -133,15 +131,21 @@ displaytreemessage tree = do
 -- Print the choices at the passed position
 displaytreeoptions :: StoryTree -> IO ()
 displaytreeoptions tree = do
-    displaytreechoice(getchoice1 tree)
-    displaytreechoice(getchoice2 tree)
-    displaytreechoice(getchoice3 tree)
+    displaytreechoice(nodePastPath tree "1")
+    displaytreechoice(nodePastPath tree "2")
+    displaytreechoice(nodePastPath tree "3")
 
 
 -- Display the choice of passed node
 displaytreechoice :: StoryTree -> IO ()
 displaytreechoice tree = do
     putStrLn(getoption tree)
+
+
+-- Display Resources (This should be implemented by deriving show, do change that)
+displayResources :: Resources -> IO ()
+displayResources (Resources health time icepick) = do
+    putStrLn("Health: " ++ show health ++ "/10, Time: " ++ show time ++ " hours, Icepick:" ++ show icepick)
 --------------------------------------------------------------------------------------
 
      
@@ -149,10 +153,9 @@ displaytreechoice tree = do
 -- Checking and Changing Resources ---------------------------------------------------
 
 -- Modify a resource value based on an input number and a value increase or decrease
-traversechange :: Resources -> StoryTree -> String -> Resources
-traversechange resources tree "1" = resources
-traversechange resources tree "2" = resources
-traversechange resources tree "3" = resources
+traversechange :: Resources -> StoryPath -> Resources
+traversechange resources path = changeResource resources (getResourceChange path)
+
      
 
 -- Get an array of the nodes 
@@ -188,15 +191,15 @@ remdel (a:r) = a: remdel r
 -- Basic Nodes for Traversal Test -----------------------------------------
 startingresources = Resources 10 8 1
 
-endnode = StoryLeaf "Any. This is an ending..." "The end." 0 0
+endnode = StoryLeaf "Any. This is an ending..." "The end."
 
-firstchoice1 = StoryNode "1. Jump" "Jumping..." 0 0 endnode 0 0 endnode 0 0 endnode 0 0
+firstchoice1 = StoryNode "1. Jump" "Jumping..." (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0) (StoryPath endnode 1 10 0 0)
 
-firstchoice2 = StoryNode "2. Run" "Running..." 0 0 endnode 0 0 endnode 0 0 endnode 0 0
+firstchoice2 = StoryNode "2. Run" "Running..." (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0)
 
-firstchoice3 = StoryNode "3. Climb" "Climbing..." 0 0 endnode 0 0 endnode 0 0 endnode 0 0
+firstchoice3 = StoryNode "3. Climb" "Climbing..." (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0)
 
-startnode = StoryNode "" "You are on everest... lets get the fuck down" 0 0 firstchoice1 0 0 firstchoice2 0 0 firstchoice3 0 0
+startnode = StoryNode "" "You are on everest... lets get the fuck down" (StoryPath firstchoice1 0 0 1 (-5)) (StoryPath firstchoice2 0 0 0 0) (StoryPath firstchoice3 0 0 0 0)
 
 
 
