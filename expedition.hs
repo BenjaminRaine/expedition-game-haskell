@@ -13,37 +13,37 @@ data StoryTree = StoryLeaf String String Int Int Int Int
 
 -- Getters (One for leaves and one for nodes) --
 getoption :: StoryTree -> String
-getoption (option result reqresource reqamount changeresource changeamount) = option
-getoption (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = option
+getoption (StoryLeaf option result reqresource reqamount changeresource changeamount) = option
+getoption (StoryNode option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = option
 
 getresult :: StoryTree -> String
-getresult (option result reqresource reqamount changeresource changeamount) = result
-getresult (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = result
+getresult (StoryLeaf option result reqresource reqamount changeresource changeamount) = result
+getresult (StoryNode option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = result
 
 getreqresource :: StoryTree -> Int
-getreqresource (option result reqresource reqamount changeresource changeamount) = reqresource
-getreqresource (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = reqresource
+getreqresource (StoryLeaf option result reqresource reqamount changeresource changeamount) = reqresource
+getreqresource (StoryNode option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = reqresource
 
 getreqamount :: StoryTree -> Int
-getreqamount (option result reqresource reqamount changeresource changeamount) = reqamount
-getreqamount (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = reqamount
+getreqamount (StoryLeaf option result reqresource reqamount changeresource changeamount) = reqamount
+getreqamount (StoryNode option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = reqamount
 
 getchangeresource :: StoryTree -> Int
-getchangeresource (option result reqresource reqamount changeresource changeamount) = changeresource
-getchangeresource (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = changeresource
+getchangeresource (StoryLeaf option result reqresource reqamount changeresource changeamount) = changeresource
+getchangeresource (StoryNode option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = changeresource
 
 getchangeamount :: StoryTree -> Int
-getchangeamount (option result reqresource reqamount changeresource changeamount) = changeamount
-getchangeamount (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = changeamount
+getchangeamount (StoryLeaf option result reqresource reqamount changeresource changeamount) = changeamount
+getchangeamount (StoryNode option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = changeamount
 
 getchoice1 :: StoryTree -> StoryTree
-getchoice1 (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = choice1
+getchoice1 (StoryNode option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = choice1
 
 getchoice2 :: StoryTree -> StoryTree
-getchoice2 (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = choice2
+getchoice2 (StoryNode option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = choice2
 
 getchoice3 :: StoryTree -> StoryTree
-getchoice3 (option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = choice3
+getchoice3 (StoryNode option result reqresource reqamount changeresource changeamount choice1 choice2 choice3) = choice3
 ---------------------------------------------------------------------------------------------------------------
 
 
@@ -116,15 +116,15 @@ remdel (a:r) = a: remdel r
 
 
 -- Basic Nodes for Traversal Test -----------------------------------------
-endnode = StoryLeaf ("Any. This is an ending..." "The end." 0 0 0 0)
+endnode = StoryLeaf "Any. This is an ending..." "The end." 0 0 0 0
 
-firstchoice1 = StoryNode ("1. Jump" "Jumping..." 0 0 0 0 endnode endnode endnode)
+firstchoice1 = StoryNode "1. Jump" "Jumping..." 0 0 0 0 endnode endnode endnode
 
-firstchoice2 = StoryNode ("2. Run" "Running..." 0 0 0 0 endnode endnode endnode)
+firstchoice2 = StoryNode "2. Run" "Running..." 0 0 0 0 endnode endnode endnode
 
-firstchoice3 = StoryNode ("3. Climb" "Climbing..." 0 0 0 0 endnode endnode endnode)
+firstchoice3 = StoryNode "3. Climb" "Climbing..." 0 0 0 0 endnode endnode endnode
 
-startnode = StoryNode ("" "You are on everest... lets get the fuck down" 0 0 0 0 firstchoice1 firstchoice2 firstchoice3)
+startnode = StoryNode "" "You are on everest... lets get the fuck down" 0 0 0 0 firstchoice1 firstchoice2 firstchoice3
 
 
 
