@@ -142,8 +142,9 @@ displaytreeoptions resources tree = do
 
 -- Helper for displaytreeoptions because nested ifs are weird
 displayoptionshelper :: Resources -> StoryTree -> String -> IO ()
-displayoptionshelper resources tree choicenum = if (choicenum `elem` (checkAvailableOptions resources tree)) then
-    displaytreechoice(nodePastPath tree choicenum) else pure ()
+displayoptionshelper resources tree choicenum = if 
+    (choicenum `elem` (checkAvailableOptions resources tree)) then
+        displaytreechoice(nodePastPath tree choicenum) else pure ()
 
 
 -- Display the choice of passed node
@@ -176,7 +177,8 @@ checkAvailableOptions resources tree =
      checkRequirements resources (getchoice3 tree) "3"]
 
 
-
+-- Check if the requirements of an individual node are met 
+-- if they are we return the option number otherwise we
 checkRequirements :: Resources -> StoryPath -> String -> String
 checkRequirements resources path choicenum = let
     (rr, ra) = getRequired path
