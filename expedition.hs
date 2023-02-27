@@ -14,37 +14,20 @@ import Control.Monad
 -- String Option, String Result
 -- StoryTree options 1, 2, 3 in the form of StoryPaths
 
-data StoryTree = StoryLeaf String String
-               | StoryNode String String StoryPath StoryPath StoryPath
+data StoryTree = StoryLeaf {option :: String,
+                            result :: String}
 
--- Getters --
--- Get the choice of this node
-getoption :: StoryTree -> String
-getoption (StoryLeaf option result) = option
-getoption (StoryNode option result choice1 choice2 choice3) = option
-
--- Get the message at this node
-getresult :: StoryTree -> String
-getresult (StoryLeaf option result) = result
-getresult (StoryNode option result choice1 choice2 choice3) = result
-
--- Get path 1 
-getchoice1 :: StoryTree -> StoryPath
-getchoice1 (StoryNode option result choice1 choice2 choice3) = choice1
-
--- Get path 2
-getchoice2 :: StoryTree -> StoryPath
-getchoice2 (StoryNode option result choice1 choice2 choice3) = choice2
-
--- Get path 3
-getchoice3 :: StoryTree -> StoryPath
-getchoice3 (StoryNode option result choice1 choice2 choice3) = choice3
+               | StoryNode {option :: String,
+                            result :: String,
+                            choice1 :: StoryPath,
+                            choice2 :: StoryPath,
+                            choice3 :: StoryPath}
 
 -- Get node past a particular path
 nodePastPath :: StoryTree -> String -> StoryTree
-nodePastPath tree "1" = getPathNode (getchoice1 tree)
-nodePastPath tree "2" = getPathNode (getchoice2 tree)
-nodePastPath tree "3" = getPathNode (getchoice3 tree)
+nodePastPath tree "1" = pathnode (choice1 tree)
+nodePastPath tree "2" = pathnode (choice2 tree)
+nodePastPath tree "3" = pathnode (choice3 tree)
 ----------------------------------------------------------------------------------
 
 
@@ -54,11 +37,11 @@ nodePastPath tree "3" = getPathNode (getchoice3 tree)
 -- StoryTree Node the Path leads to
 -- Int Required Resource, Int Required Amount, Int Resource Changed, Int Change Amount
 
-data StoryPath = StoryPath StoryTree Int Int Int Int
-
--- Get the node past the path
-getPathNode :: StoryPath -> StoryTree
-getPathNode (StoryPath tree rr ra rc ca) = tree
+data StoryPath = StoryPath {pathnode :: StoryTree,
+                            reqtype :: Int,
+                            reqamt :: Int,
+                            changetype :: Int,
+                            changeamt :: Int}
 
 -- Get required to traverse
 getRequired :: StoryPath -> (Int, Int)
@@ -67,6 +50,7 @@ getRequired (StoryPath tree rr ra rc ca) = (rr, ra)
 -- Get change caused by traversal
 getChange :: StoryPath -> (Int, Int)
 getChange (StoryPath tree rr ra rc ca) = (rc, ca)
+
 ----------------------------------------------------------------------------------
 
 
@@ -76,20 +60,23 @@ getChange (StoryPath tree rr ra rc ca) = (rc, ca)
 -- We could also change this to use strings instead of numbers for identification
 -- Health, Time, Icepick
 
-data Resources = Resources Int Int Int
+data Resources = Resources {health :: Int,
+                            time :: Int,
+                            icepick :: Int}
 
 -- Get current value of a requested resource
 getResource :: Resources -> Int -> Int
-getResource (Resources health time icepick) 0 = 0
-getResource (Resources health time icepick) 1 = health
-getResource (Resources health time icepick) 2 = time
-getResource (Resources health time icepick) 3 = icepick
+getResource (Resources h t p) 0 = 0
+getResource (Resources h t p) 1 = h
+getResource (Resources h t p) 2 = t
+getResource (Resources h t p) 3 = p
 
 -- Add change to a particular resource
 changeResource :: Resources -> (Int, Int) -> Resources
-changeResource (Resources health time icepick) (1, change) = (Resources (health+change) time icepick)
-changeResource (Resources health time icepick) (2, change) = (Resources health (time+change) icepick)
-changeResource (Resources health time icepick) (3, change) = (Resources health time (icepick+change))
+changeResource current (0, _) = current
+changeResource (Resources h t p) (1, change) = Resources (h+change) t p
+changeResource (Resources h t p) (2, change) = Resources h (t+change) p
+changeResource (Resources h t p) (3, change) = Resources h t (p+change)
 
 ----------------------------------------------------------------------------------
 
@@ -99,11 +86,15 @@ changeResource (Resources health time icepick) (3, change) = (Resources health t
 
 -- Basic loop of the game as we traverse the tree
 -- We print options, detect input, then traverse the tree 
-play :: (Resources, StoryTree) -> IO StoryTree
+play :: (Resources, StoryTree) -> IO ()
+play (resources, (StoryLeaf c r)) = do
+     putStrLn("")
+     putStrLn(r)
+
 play (resources, tree) =
    do
       putStrLn("")
-      displaytreemessage tree
+      putStrLn(result tree)
       putStrLn("")
       displayResources resources
       displaytreeoptions resources tree
@@ -112,25 +103,18 @@ play (resources, tree) =
         then do
            play (movedown resources tree line)
         else play (resources, tree)
-	-- TODO: End on leaves
 
 
 -- We move down to the selected option and modify the resources
 movedown :: Resources -> StoryTree -> String -> (Resources, StoryTree)
-movedown resources tree "1" = (traversechange resources (getchoice1 tree), nodePastPath tree "1")
-movedown resources tree "2" = (traversechange resources (getchoice2 tree), nodePastPath tree "2")
-movedown resources tree "3" = (traversechange resources (getchoice3 tree), nodePastPath tree "3")
+movedown resources tree "1" = (traversechange resources (choice1 tree), nodePastPath tree "1")
+movedown resources tree "2" = (traversechange resources (choice2 tree), nodePastPath tree "2")
+movedown resources tree "3" = (traversechange resources (choice3 tree), nodePastPath tree "3")
 --------------------------------------------------------------------------------------
 
 
 
 -- Displaying to terminal ------------------------------------------------------------
-
--- Print the result at the passed position
-displaytreemessage:: StoryTree -> IO ()
-displaytreemessage tree = do
-    putStrLn(getresult tree)
-
 
 -- Print the choices at the passed position
 displaytreeoptions :: Resources -> StoryTree -> IO ()
@@ -150,7 +134,7 @@ displayoptionshelper resources tree choicenum = if
 -- Display the choice of passed node
 displaytreechoice :: StoryTree -> IO ()
 displaytreechoice tree = do
-    putStrLn(getoption tree)
+    putStrLn(option tree)
 
 
 -- Display Resources (This should be implemented by deriving show, do change that)
@@ -172,9 +156,9 @@ traversechange resources path = changeResource resources (getChange path)
 -- Get an array of the available nodes 
 checkAvailableOptions :: Resources -> StoryTree -> [String]
 checkAvailableOptions resources tree = 
-    [checkRequirements resources (getchoice1 tree) "1",
-     checkRequirements resources (getchoice2 tree) "2",
-     checkRequirements resources (getchoice3 tree) "3"]
+    [checkRequirements resources (choice1 tree) "1",
+     checkRequirements resources (choice2 tree) "2",
+     checkRequirements resources (choice3 tree) "3"]
 
 
 -- Check if the requirements of an individual node are met 
@@ -212,6 +196,8 @@ startingresources = Resources 10 8 1
 
 endnode = StoryLeaf "Any. This is an ending..." "The end."
 
+dummypath = StoryPath endnode 3 5 0 0
+
 firstchoice1 = StoryNode "1. Jump" "Jumping..." (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0) (StoryPath endnode 1 10 0 0)
 
 firstchoice2 = StoryNode "2. Run" "Running..." (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0)
@@ -224,5 +210,4 @@ startnode = StoryNode "" "You are on everest... lets get the fuck down" (StoryPa
 
 main = do
     play (startingresources, startnode)
-
 -- End of Basic Nodes -----------------------------------------------------
