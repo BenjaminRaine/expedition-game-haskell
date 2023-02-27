@@ -1,12 +1,5 @@
 import System.IO
 
--- Things to improve -----------------------------------------------------------------------------------------------------------------
--- Right now the main issue with the whole thing is duplication of code for options "1" "2" "3"
--- We could change the choices to be an [StoryPath], though then we need to successfully cast the line to an int
--- Another future TODO would be to make it so that we can pass changes in multiple elements ie time and health
----------------------------------------------------------------------------------------------------------------------------------------
-
-
 -- StoryTree Data Type -------------------------------------------------------------------------------------
 
 -- String Option, String Result
@@ -78,7 +71,6 @@ changeResource (Resources h t p) (3, change) = Resources h t (p+change)
 
 -- Empty Resource Ending Nodes
 nohealthleaf = StoryLeaf("You've run out of health.")
-
 notimeleaf = StoryLeaf("You've run out of oxygen.")
 ----------------------------------------------------------------------------------
 
