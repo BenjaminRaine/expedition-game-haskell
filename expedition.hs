@@ -15,15 +15,11 @@ import System.IO
 data StoryTree = StoryLeaf {situation :: String}
 
                | StoryNode {situation :: String,
-                            choice1 :: StoryPath,
-                            choice2 :: StoryPath,
-                            choice3 :: StoryPath}
+                            choices :: [StoryPath]}
 
 -- Get node past a particular path
-nodePastPath :: StoryTree -> String -> StoryTree
-nodePastPath tree "1" = pathnode (choice1 tree)
-nodePastPath tree "2" = pathnode (choice2 tree)
-nodePastPath tree "3" = pathnode (choice3 tree)
+nodePastPath :: StoryTree -> Int -> StoryTree
+nodePastPath tree i = pathnode ((choices tree) !! i)
 ----------------------------------------------------------------------------------
 
 
@@ -104,32 +100,16 @@ play (resources, tree) = do
 
 -- We move down to the selected option and modify the resources
 movedown :: Resources -> StoryTree -> String -> (Resources, StoryTree)
-movedown resources tree "1" = (traversechange resources (choice1 tree), nodePastPath tree "1")
-movedown resources tree "2" = (traversechange resources (choice2 tree), nodePastPath tree "2")
-movedown resources tree "3" = (traversechange resources (choice3 tree), nodePastPath tree "3")
+movedown resources tree i = (traversechange resources ((choices tree) !! (strchoicetoindex i)), nodePastPath ((choices tree) !! strchoicetoindex(i)))
 --------------------------------------------------------------------------------------
 
 
 
 -- Displaying to terminal ------------------------------------------------------------
 
--- TODO Rewrite this
 -- Print the choices at the passed position
 displaytreeoptions :: Resources -> StoryTree -> IO ()
-displaytreeoptions resources tree = do
-    displayoptionshelper resources tree (choice1 tree) "1"
-    displayoptionshelper resources tree (choice2 tree) "2"
-    displayoptionshelper resources tree (choice3 tree) "3"
-
-
--- Helper for displaytreeoptions
--- I tried using when but it was being weird
-displayoptionshelper :: Resources -> StoryTree -> StoryPath -> String -> IO ()
-displayoptionshelper resources tree path choicenum = if 
-    (choicenum `elem` (checkAvailableOptions resources tree)) then
-        putStrLn(option path) 
-    else 
-        pure () 
+displaytreeoptions resources tree = map [putStrLn(option o) | o <- (choices tree), o `elem` (checkAvailableOptions resources tree)]
 
 -- Display Resources (This should be implemented by deriving show, do change that)
 displayResources :: Resources -> IO ()
@@ -147,22 +127,22 @@ traversechange resources path = changeResource resources (getChange path)
 
 -- Get an array of the available nodes 
 checkAvailableOptions :: Resources -> StoryTree -> [String]
-checkAvailableOptions resources tree = 
-    [checkRequirements resources (choice1 tree) "1",
-     checkRequirements resources (choice2 tree) "2",
-     checkRequirements resources (choice3 tree) "3"]
+checkAvailableOptions resources tree = checkAvailableReccursive resources (choices tree) (length (choices tree))
 
+-- Recursive Helper for checkAvailableOptions
+-- I know this function is a bit messy I might rewrite this
+checkAvailableReccursive :: Resources -> [StoryPath] -> Int -> [String]
+checkAvailableReccursive resources clist 0 = []
+checkAvailableReccursive resources clist i = (checkRequirements resources (clist !! i-1) (show i)) : checkAvailableReccursive resources clist i
 
 -- Check if the requirements of an individual node are met 
--- if they are we return the option number otherwise we
+-- if they are we return the option number otherwise we return ""
 checkRequirements :: Resources -> StoryPath -> String -> String
 checkRequirements resources path choicenum = let
     (rr, ra) = getRequired path
     ca = getResource resources rr
     shoulddis = ca >= ra
     in if shoulddis then choicenum else ""
-    
-
 -----------------------------------------------------------------------------------------
 
 
@@ -180,6 +160,11 @@ fixdel st
 remdel ('\DEL':r) = r
 remdel (a:'\DEL':r) = r
 remdel (a:r) = a: remdel r
+
+
+strchoicetoindex :: String -> Int
+strchoicetoindex line = read line - 1
+
 ------------------------------------------------------------------------------------------
 
 
@@ -188,16 +173,13 @@ startingresources = Resources 10 8 1
 
 endnode = StoryLeaf "The end."
 
-dummypath = StoryPath endnode 3 5 0 0
+firstchoice1 = StoryNode "You are at place 1" [(StoryPath endnode 0 0 0 0 "1. This is an ending..." "..."), (StoryPath endnode 0 0 0 0 "2. This is an ending..."  "..."), (StoryPath endnode 1 10 0 0 "3. This is an ending..." "...")]
 
-firstchoice1 = StoryNode "You are at place 1" (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 1 10 0 0 "Any. This is an ending..." "...")
+firstchoice2 = StoryNode "You are at place 2" [(StoryPath endnode 0 0 0 0 "1. This is an ending..." "..."), (StoryPath endnode 0 0 0 0 "2. This is an ending..."  "..."), (StoryPath endnode 0 0 0 0 "3. This is an ending..." "...")]
 
-firstchoice2 = StoryNode "You are at place 2" (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...")
+firstchoice3 = StoryNode "You are at place 3" [(StoryPath endnode 0 0 0 0 "1. This is an ending..." "...")]
 
-firstchoice3 = StoryNode "You are at place 3" (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...")
-
-startnode = StoryNode "You are on everest... lets get the fuck down" (StoryPath firstchoice1 0 0 1 (-5) "1. Jump" "Jumping...") (StoryPath firstchoice2 0 0 0 0 "2. Climb" "Climbing...") (StoryPath firstchoice3 0 0 0 0 "3. Run" "Running...")
-
+startnode = StoryNode "You are on everest... lets get the fuck down" [(StoryPath firstchoice1 0 0 1 (-5) "1. Jump" "Jumping..."), (StoryPath firstchoice2 0 0 0 0 "2. Climb" "Climbing..."), (StoryPath firstchoice3 0 0 0 0 "3. Run" "Running...")]
 
 
 main = do
