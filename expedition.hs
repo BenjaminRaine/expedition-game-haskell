@@ -81,26 +81,32 @@ notimeleaf = StoryLeaf("You've run out of oxygen.")
 -- Basic loop of the game as we traverse the tree
 -- We print options, detect input, then traverse the tree 
 play :: (Resources, StoryTree) -> IO ()
-play (resources, (StoryLeaf s)) = do
-     putStrLn("")
-     putStrLn(s)
+play (resources, (StoryLeaf s)) = 
+    if (health resources) <= 0 then
+        play ((Resources 1 1 1), nohealthleaf)
+    else if (time resources) <= 0 then
+        play ((Resources 1 1 1), notimeleaf)
+    else do
+        putStrLn("")
+        putStrLn(s)
 
-play (resources, tree) = do
-    putStrLn("")
-    putStrLn(situation tree)
-    putStrLn("")
-    displayResources resources
-    displaytreeoptions resources tree
-    line <- getLineFixed
-    if (line `elem` (checkAvailableOptions resources tree)) -- We need to go back to check these are actually met.
-        then do
-            displayoutcome tree line
-            if (health resources) < 0 then
-                play (resources, nohealthleaf)
-            else if (time resources) < 0 then
-                play (resources, notimeleaf)
-            else play (movedown resources tree line)
-    else play (resources, tree)
+play (resources, tree) =
+    if (health resources) <= 0 then
+        play ((Resources 1 1 1), nohealthleaf)
+    else if (time resources) <= 0 then
+        play ((Resources 1 1 1), notimeleaf)
+    else do
+        putStrLn("")
+        putStrLn(situation tree)
+        putStrLn("")
+        displayResources resources
+        displaytreeoptions resources tree
+        line <- getLineFixed
+        if (line `elem` (checkAvailableOptions resources tree)) -- We need to go back to check these are actually met.
+            then do
+                displayoutcome tree line
+                play (movedown resources tree line)
+        else play (resources, tree)
 
 
 -- We move down to the selected option and modify the resources
