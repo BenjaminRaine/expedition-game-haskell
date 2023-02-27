@@ -1,10 +1,8 @@
 import System.IO
-import Control.Monad
 
 -- Things to improve -----------------------------------------------------------------------------------------------------------------
 -- Right now the main issue with the whole thing is duplication of code for options "1" "2" "3"
 -- We could change the choices to be an [StoryPath], though then we need to successfully cast the line to an int
--- If we do travel frequently to the same node through different paths should result be situation? and add string result to storypath
 -- Another future TODO would be to make it so that we can pass changes in multiple elements ie time and health
 ---------------------------------------------------------------------------------------------------------------------------------------
 
@@ -14,11 +12,9 @@ import Control.Monad
 -- String Option, String Result
 -- StoryTree options 1, 2, 3 in the form of StoryPaths
 
-data StoryTree = StoryLeaf {option :: String,
-                            result :: String}
+data StoryTree = StoryLeaf {situation :: String}
 
-               | StoryNode {option :: String,
-                            result :: String,
+               | StoryNode {situation :: String,
                             choice1 :: StoryPath,
                             choice2 :: StoryPath,
                             choice3 :: StoryPath}
@@ -41,15 +37,17 @@ data StoryPath = StoryPath {pathnode :: StoryTree,
                             reqtype :: Int,
                             reqamt :: Int,
                             changetype :: Int,
-                            changeamt :: Int}
+                            changeamt :: Int,
+                            option :: String,
+                            result :: String}
 
 -- Get required to traverse
 getRequired :: StoryPath -> (Int, Int)
-getRequired (StoryPath tree rr ra rc ca) = (rr, ra)
+getRequired (StoryPath _ rr ra _ _ _ _) = (rr, ra)
 
 -- Get change caused by traversal
 getChange :: StoryPath -> (Int, Int)
-getChange (StoryPath tree rr ra rc ca) = (rc, ca)
+getChange (StoryPath _ _ _ rc ca _ _) = (rc, ca)
 
 ----------------------------------------------------------------------------------
 
@@ -66,10 +64,10 @@ data Resources = Resources {health :: Int,
 
 -- Get current value of a requested resource
 getResource :: Resources -> Int -> Int
-getResource (Resources h t p) 0 = 0
-getResource (Resources h t p) 1 = h
-getResource (Resources h t p) 2 = t
-getResource (Resources h t p) 3 = p
+getResource _ 0 = 0
+getResource (Resources h _ _) 1 = h
+getResource (Resources _ t _) 2 = t
+getResource (Resources _ _ p) 3 = p
 
 -- Add change to a particular resource
 changeResource :: Resources -> (Int, Int) -> Resources
@@ -87,22 +85,21 @@ changeResource (Resources h t p) (3, change) = Resources h t (p+change)
 -- Basic loop of the game as we traverse the tree
 -- We print options, detect input, then traverse the tree 
 play :: (Resources, StoryTree) -> IO ()
-play (resources, (StoryLeaf c r)) = do
+play (resources, (StoryLeaf s)) = do
      putStrLn("")
-     putStrLn(r)
+     putStrLn(s)
 
-play (resources, tree) =
-   do
-      putStrLn("")
-      putStrLn(result tree)
-      putStrLn("")
-      displayResources resources
-      displaytreeoptions resources tree
-      line <- getLineFixed
-      if (line `elem` (checkAvailableOptions resources tree)) -- We need to go back to check these are actually met.
-        then do
-           play (movedown resources tree line)
-        else play (resources, tree)
+play (resources, tree) = do
+    putStrLn("")
+    putStrLn(situation tree)
+    putStrLn("")
+    displayResources resources
+    displaytreeoptions resources tree
+    line <- getLineFixed
+    if (line `elem` (checkAvailableOptions resources tree)) -- We need to go back to check these are actually met.
+      then do
+         play (movedown resources tree line)
+      else play (resources, tree)
 
 
 -- We move down to the selected option and modify the resources
@@ -116,26 +113,23 @@ movedown resources tree "3" = (traversechange resources (choice3 tree), nodePast
 
 -- Displaying to terminal ------------------------------------------------------------
 
+-- TODO Rewrite this
 -- Print the choices at the passed position
 displaytreeoptions :: Resources -> StoryTree -> IO ()
 displaytreeoptions resources tree = do
-    displayoptionshelper resources tree "1"
-    displayoptionshelper resources tree "2"
-    displayoptionshelper resources tree "3"
+    displayoptionshelper resources tree (choice1 tree) "1"
+    displayoptionshelper resources tree (choice2 tree) "2"
+    displayoptionshelper resources tree (choice3 tree) "3"
 
 
--- Helper for displaytreeoptions because nested ifs are weird
-displayoptionshelper :: Resources -> StoryTree -> String -> IO ()
-displayoptionshelper resources tree choicenum = if 
+-- Helper for displaytreeoptions
+-- I tried using when but it was being weird
+displayoptionshelper :: Resources -> StoryTree -> StoryPath -> String -> IO ()
+displayoptionshelper resources tree path choicenum = if 
     (choicenum `elem` (checkAvailableOptions resources tree)) then
-        displaytreechoice(nodePastPath tree choicenum) else pure ()
-
-
--- Display the choice of passed node
-displaytreechoice :: StoryTree -> IO ()
-displaytreechoice tree = do
-    putStrLn(option tree)
-
+        putStrLn(option path) 
+    else 
+        pure () 
 
 -- Display Resources (This should be implemented by deriving show, do change that)
 displayResources :: Resources -> IO ()
@@ -150,8 +144,6 @@ displayResources (Resources health time icepick) = do
 -- Modify a resource value based on an input number and a value increase or decrease
 traversechange :: Resources -> StoryPath -> Resources
 traversechange resources path = changeResource resources (getChange path)
-
-     
 
 -- Get an array of the available nodes 
 checkAvailableOptions :: Resources -> StoryTree -> [String]
@@ -191,20 +183,20 @@ remdel (a:r) = a: remdel r
 ------------------------------------------------------------------------------------------
 
 
--- Basic Nodes for Traversal Test -----------------------------------------
+-- Nodes for Prototype: Setting Up Story ------------------------------------
 startingresources = Resources 10 8 1
 
-endnode = StoryLeaf "Any. This is an ending..." "The end."
+endnode = StoryLeaf "The end."
 
 dummypath = StoryPath endnode 3 5 0 0
 
-firstchoice1 = StoryNode "1. Jump" "Jumping..." (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0) (StoryPath endnode 1 10 0 0)
+firstchoice1 = StoryNode "You are at place 1" (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 1 10 0 0 "Any. This is an ending..." "...")
 
-firstchoice2 = StoryNode "2. Run" "Running..." (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0)
+firstchoice2 = StoryNode "You are at place 2" (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...")
 
-firstchoice3 = StoryNode "3. Climb" "Climbing..." (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0) (StoryPath endnode 0 0 0 0)
+firstchoice3 = StoryNode "You are at place 3" (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...")
 
-startnode = StoryNode "" "You are on everest... lets get the fuck down" (StoryPath firstchoice1 0 0 1 (-5)) (StoryPath firstchoice2 0 0 0 0) (StoryPath firstchoice3 0 0 0 0)
+startnode = StoryNode "You are on everest... lets get the fuck down" (StoryPath firstchoice1 0 0 1 (-5) "1. Jump" "Jumping...") (StoryPath firstchoice2 0 0 0 0 "2. Climb" "Climbing...") (StoryPath firstchoice3 0 0 0 0 "3. Run" "Running...")
 
 
 
