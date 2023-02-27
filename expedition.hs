@@ -1,9 +1,12 @@
 import System.IO
+import Control.Monad
 
+-- Things to improve -----------------------------------------------------------------------------------------------------------------
 -- Right now the main issue with the whole thing is duplication of code for options "1" "2" "3"
 -- We could change the choices to be an [StoryPath], though then we need to successfully cast the line to an int
 -- If we do travel frequently to the same node through different paths should result be situation? and add string result to storypath
-
+-- Another future TODO would be to make it so that we can pass changes in multiple elements ie time and health
+---------------------------------------------------------------------------------------------------------------------------------------
 
 
 -- StoryTree Data Type -------------------------------------------------------------------------------------
@@ -58,12 +61,12 @@ getPathNode :: StoryPath -> StoryTree
 getPathNode (StoryPath tree rr ra rc ca) = tree
 
 -- Get required to traverse
-getRequiredResource :: StoryPath -> (Int, Int)
-getRequiredResource (StoryPath tree rr ra rc ca) = (rr, ra)
+getRequired :: StoryPath -> (Int, Int)
+getRequired (StoryPath tree rr ra rc ca) = (rr, ra)
 
 -- Get change caused by traversal
-getResourceChange :: StoryPath -> (Int, Int)
-getResourceChange (StoryPath tree rr ra rc ca) = (rc, ca)
+getChange :: StoryPath -> (Int, Int)
+getChange (StoryPath tree rr ra rc ca) = (rc, ca)
 ----------------------------------------------------------------------------------
 
 
@@ -77,6 +80,7 @@ data Resources = Resources Int Int Int
 
 -- Get current value of a requested resource
 getResource :: Resources -> Int -> Int
+getResource (Resources health time icepick) 0 = 0
 getResource (Resources health time icepick) 1 = health
 getResource (Resources health time icepick) 2 = time
 getResource (Resources health time icepick) 3 = icepick
@@ -102,12 +106,12 @@ play (resources, tree) =
       displaytreemessage tree
       putStrLn("")
       displayResources resources
-      displaytreeoptions tree
+      displaytreeoptions resources tree
       line <- getLineFixed
-      if (line `elem` ["1","2","3"]) -- We need to go back to check these are actually met.
+      if (line `elem` (checkAvailableOptions resources tree)) -- We need to go back to check these are actually met.
         then do
            play (movedown resources tree line)
-        else return tree
+        else play (resources, tree)
 	-- TODO: End on leaves
 
 
@@ -129,11 +133,17 @@ displaytreemessage tree = do
 
 
 -- Print the choices at the passed position
-displaytreeoptions :: StoryTree -> IO ()
-displaytreeoptions tree = do
-    displaytreechoice(nodePastPath tree "1")
-    displaytreechoice(nodePastPath tree "2")
-    displaytreechoice(nodePastPath tree "3")
+displaytreeoptions :: Resources -> StoryTree -> IO ()
+displaytreeoptions resources tree = do
+    displayoptionshelper resources tree "1"
+    displayoptionshelper resources tree "2"
+    displayoptionshelper resources tree "3"
+
+
+-- Helper for displaytreeoptions because nested ifs are weird
+displayoptionshelper :: Resources -> StoryTree -> String -> IO ()
+displayoptionshelper resources tree choicenum = if (choicenum `elem` (checkAvailableOptions resources tree)) then
+    displaytreechoice(nodePastPath tree choicenum) else pure ()
 
 
 -- Display the choice of passed node
@@ -154,18 +164,26 @@ displayResources (Resources health time icepick) = do
 
 -- Modify a resource value based on an input number and a value increase or decrease
 traversechange :: Resources -> StoryPath -> Resources
-traversechange resources path = changeResource resources (getResourceChange path)
+traversechange resources path = changeResource resources (getChange path)
 
      
 
--- Get an array of the nodes 
---checkAvailableOptions :: Resources -> StoryTree -> [String]
---checkAvailableOptions = []
+-- Get an array of the available nodes 
+checkAvailableOptions :: Resources -> StoryTree -> [String]
+checkAvailableOptions resources tree = 
+    [checkRequirements resources (getchoice1 tree) "1",
+     checkRequirements resources (getchoice2 tree) "2",
+     checkRequirements resources (getchoice3 tree) "3"]
 
 
 
---checkRequirements :: Resources -> StoryTree -> String -> String
---    checkRequirements resources node "1" = 
+checkRequirements :: Resources -> StoryPath -> String -> String
+checkRequirements resources path choicenum = let
+    (rr, ra) = getRequired path
+    ca = getResource resources rr
+    shoulddis = ca >= ra
+    in if shoulddis then choicenum else ""
+    
 
 -----------------------------------------------------------------------------------------
 
@@ -173,10 +191,9 @@ traversechange resources path = changeResource resources (getResourceChange path
 -- Getting Player Input -----------------------------------------------------------------
 
 -- Get player input
-getLineFixed =
-   do
-     line <- getLine
-     return (fixdel line)
+getLineFixed = do
+    line <- getLine
+    return (fixdel line)
 
 
 fixdel st
