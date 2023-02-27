@@ -98,6 +98,7 @@ play (resources, tree) = do
     line <- getLineFixed
     if (line `elem` (checkAvailableOptions resources tree)) -- We need to go back to check these are actually met.
       then do
+         displayoutcome tree line
          play (movedown resources tree line)
       else play (resources, tree)
 
@@ -135,6 +136,20 @@ displayoptionshelper resources tree path choicenum = if
 displayResources :: Resources -> IO ()
 displayResources (Resources health time icepick) = do
     putStrLn("Health: " ++ show health ++ "/10, Time: " ++ show time ++ " hours, Icepick:" ++ show icepick)
+
+-- Displays the outcome of the chosen node
+displayoutcome :: StoryTree -> String -> IO ()
+displayoutcome tree "1" = do
+    putStrLn("")
+    putStrLn(result (choice1 tree))
+
+displayoutcome tree "2" = do 
+    putStrLn("")
+    putStrLn(result (choice1 tree))
+
+displayoutcome tree "3" = do 
+    putStrLn("")
+    putStrLn(result (choice1 tree))
 --------------------------------------------------------------------------------------
 
      
