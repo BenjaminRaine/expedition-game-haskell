@@ -1,12 +1,5 @@
 import System.IO
 
--- Things to improve -----------------------------------------------------------------------------------------------------------------
--- Right now the main issue with the whole thing is duplication of code for options "1" "2" "3"
--- We could change the choices to be an [StoryPath], though then we need to successfully cast the line to an int
--- Another future TODO would be to make it so that we can pass changes in multiple elements ie time and health
----------------------------------------------------------------------------------------------------------------------------------------
-
-
 -- StoryTree Data Type -------------------------------------------------------------------------------------
 
 -- String Option, String Result
@@ -76,6 +69,9 @@ changeResource (Resources h t p) (1, change) = Resources (h+change) t p
 changeResource (Resources h t p) (2, change) = Resources h (t+change) p
 changeResource (Resources h t p) (3, change) = Resources h t (p+change)
 
+-- Empty Resource Ending Nodes
+nohealthleaf = StoryLeaf("You've run out of health.")
+notimeleaf = StoryLeaf("You've run out of oxygen.")
 ----------------------------------------------------------------------------------
 
 
@@ -85,22 +81,33 @@ changeResource (Resources h t p) (3, change) = Resources h t (p+change)
 -- Basic loop of the game as we traverse the tree
 -- We print options, detect input, then traverse the tree 
 play :: (Resources, StoryTree) -> IO ()
-play (resources, (StoryLeaf s)) = do
-     putStrLn("")
-     putStrLn(s)
 
-play (resources, tree) = do
-    putStrLn("")
-    putStrLn(situation tree)
-    putStrLn("")
-    displayResources resources
-    displaytreeoptions resources tree
-    line <- getLineFixed
-    if (line `elem` (checkAvailableOptions resources tree)) -- We need to go back to check these are actually met.
-      then do
-         displayoutcome tree line
-         play (movedown resources tree line)
-      else play (resources, tree)
+play (resources, (StoryLeaf s)) = 
+    if (health resources) <= 0 then
+        play ((Resources 1 1 1), nohealthleaf)
+    else if (time resources) <= 0 then
+        play ((Resources 1 1 1), notimeleaf)
+    else do
+        putStrLn("")
+        putStrLn(s)
+
+play (resources, tree) =
+    if (health resources) <= 0 then
+        play ((Resources 1 1 1), nohealthleaf)
+    else if (time resources) <= 0 then
+        play ((Resources 1 1 1), notimeleaf)
+    else do
+        putStrLn("")
+        putStrLn(situation tree)
+        putStrLn("")
+        displayResources resources
+        displaytreeoptions resources tree
+        line <- getLineFixed
+        if (line `elem` (checkAvailableOptions resources tree)) -- We need to go back to check these are actually met.
+            then do
+                displayoutcome tree line
+                play (movedown resources tree line)
+        else play (resources, tree)
 
 
 -- We move down to the selected option and modify the resources
@@ -114,7 +121,6 @@ movedown resources tree "3" = (traversechange resources (choice3 tree), nodePast
 
 -- Displaying to terminal ------------------------------------------------------------
 
--- TODO Rewrite this
 -- Print the choices at the passed position
 displaytreeoptions :: Resources -> StoryTree -> IO ()
 displaytreeoptions resources tree = do
@@ -230,8 +236,6 @@ useIcePick1 = blizzardEncounter
 beginJourney = StoryNode "You begin making your way down from the summit, and you soon encounter a steep descent, but it's still flat enough to walk. Do you use your ice pick?" (StoryPath useIcePick1 3 1 3 (-1) "1. Use ice pick (-1 ice pick)" "Your ice pick gave you an easier time on the way down, but you cracked the handle and it's no longer usable. Was it worth it?") (StoryPath dontUseIcePick2 2 1 2 (-1) "2. Don't use ice pick (-1 hour)" "You stumbled a bit on the way down and it took a bit longer, but you managed to get through. Maybe the ice pick will be useful later...") dummypath
 
 startnode = StoryNode "Congratulations! You've made it to the top of Mount Everest! But can you get down in one piece?" (StoryPath beginJourney 0 0 0 0 "1. Begin your descent" "Good luck...") dummypath dummypath
-
-
 
 main = do
     play (startingresources, startnode)
