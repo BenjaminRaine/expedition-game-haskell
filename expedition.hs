@@ -22,7 +22,6 @@ data StoryTree = StoryLeaf {situation :: String}
 nodePastPath :: StoryTree -> String -> StoryTree
 nodePastPath tree "1" = pathnode (choice1 tree)
 nodePastPath tree "2" = pathnode (choice2 tree)
--- nodePastPath tree "3" = pathnode (choice3 tree)
 ----------------------------------------------------------------------------------
 
 
@@ -106,7 +105,6 @@ play (resources, tree) = do
 movedown :: Resources -> StoryTree -> String -> (Resources, StoryTree)
 movedown resources tree "1" = (traversechange resources (choice1 tree), nodePastPath tree "1")
 movedown resources tree "2" = (traversechange resources (choice2 tree), nodePastPath tree "2")
--- movedown resources tree "3" = (traversechange resources (choice3 tree), nodePastPath tree "3")
 --------------------------------------------------------------------------------------
 
 
@@ -119,7 +117,6 @@ displaytreeoptions :: Resources -> StoryTree -> IO ()
 displaytreeoptions resources tree = do
     displayoptionshelper resources tree (choice1 tree) "1"
     displayoptionshelper resources tree (choice2 tree) "2"
-    -- displayoptionshelper resources tree (choice3 tree) "3"
 
 
 -- Helper for displaytreeoptions
@@ -146,9 +143,6 @@ displayoutcome tree "2" = do
     putStrLn("")
     putStrLn(result (choice2 tree))
 
--- displayoutcome tree "3" = do 
---     putStrLn("")
---     putStrLn(result (choice3 tree))
 --------------------------------------------------------------------------------------
 
      
@@ -164,7 +158,6 @@ checkAvailableOptions :: Resources -> StoryTree -> [String]
 checkAvailableOptions resources tree = 
     [checkRequirements resources (choice1 tree) "1",
      checkRequirements resources (choice2 tree) "2"]
-    --  checkRequirements resources (choice3 tree) "3"
 
 
 -- Check if the requirements of an individual node are met 
