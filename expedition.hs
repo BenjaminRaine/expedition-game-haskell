@@ -3,7 +3,7 @@ import System.IO
 -- StoryTree Data Type -------------------------------------------------------------------------------------
 
 -- String Option, String Result
--- StoryTree options 1, 2, 3 in the form of StoryPaths
+-- StoryTree options 1, 2 in the form of StoryPaths
 
 data StoryTree = StoryLeaf {situation :: String}
 
@@ -45,8 +45,6 @@ getChange (StoryPath _ _ _ rc ca _ _) = (rc, ca)
 
 -- Resources Data Type -----------------------------------------------------------
 
--- Maybe we can make this slightly more elegant? This is basically a weird implementation of a fixed size [Int] at the moment
--- We could also change this to use strings instead of numbers for identification
 -- Health, Time, Icepick
 
 data Resources = Resources {health :: Int,
@@ -101,7 +99,7 @@ play (resources, tree) =
         displayResources resources
         displaytreeoptions resources tree
         line <- getLineFixed
-        if (line `elem` (checkAvailableOptions resources tree)) -- We need to go back to check these are actually met.
+        if (line `elem` (checkAvailableOptions resources tree))
             then do
                 displayoutcome tree line
                 play (movedown resources tree line)
@@ -126,7 +124,6 @@ displaytreeoptions resources tree = do
 
 
 -- Helper for displaytreeoptions
--- I tried using when but it was being weird
 displayoptionshelper :: Resources -> StoryTree -> StoryPath -> String -> IO ()
 displayoptionshelper resources tree path choicenum = if 
     (choicenum `elem` (checkAvailableOptions resources tree)) then
@@ -134,7 +131,7 @@ displayoptionshelper resources tree path choicenum = if
     else 
         pure () 
 
--- Display Resources (This should be implemented by deriving show, do change that)
+-- Display Resources
 displayResources :: Resources -> IO ()
 displayResources (Resources health time icepick) = do
     putStrLn("Health: " ++ show health ++ "/10, Time: " ++ show time ++ " hours, Icepick:" ++ show icepick)
@@ -201,7 +198,7 @@ remdel (a:r) = a: remdel r
 ------------------------------------------------------------------------------------------
 
 
--- Nodes for Prototype: Setting Up Story ------------------------------------
+-- Nodes for Prototype: Setting Up Story -------------------------------------------------
 
 -- health, time, ice pick
 startingresources = Resources 10 8 1
