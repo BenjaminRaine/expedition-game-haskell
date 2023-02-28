@@ -162,8 +162,8 @@ traversechange resources path = changeResource resources (getChange path)
 -- Get an array of the available nodes 
 checkAvailableOptions :: Resources -> StoryTree -> [String]
 checkAvailableOptions resources tree = 
-    [checkRequirements resources (choice1 tree) "1",
-     checkRequirements resources (choice2 tree) "2"]
+    fixfilter [checkRequirements resources (choice1 tree) "1",
+               checkRequirements resources (choice2 tree) "2"]
 
 
 -- Check if the requirements of an individual node are met 
@@ -175,7 +175,12 @@ checkRequirements resources path choicenum = let
     shoulddis = ca >= ra
     in if shoulddis then choicenum else ""
     
-
+fixfilter st
+   | "" `elem` st = fixfilter (removeemptystring st)
+   | otherwise = st
+removeemptystring ("":r) = r
+removeemptystring (a:"":r) = a:r
+removeemptystring (a:r) = a: removeemptystring r
 -----------------------------------------------------------------------------------------
 
 
