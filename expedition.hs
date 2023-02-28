@@ -81,6 +81,7 @@ notimeleaf = StoryLeaf("You've run out of oxygen.")
 -- Basic loop of the game as we traverse the tree
 -- We print options, detect input, then traverse the tree 
 play :: (Resources, StoryTree) -> IO ()
+
 play (resources, (StoryLeaf s)) = 
     if (health resources) <= 0 then
         play ((Resources 1 1 1), nohealthleaf)
@@ -150,11 +151,11 @@ displayoutcome tree "1" = do
 
 displayoutcome tree "2" = do 
     putStrLn("")
-    putStrLn(result (choice1 tree))
+    putStrLn(result (choice2 tree))
 
 displayoutcome tree "3" = do 
     putStrLn("")
-    putStrLn(result (choice1 tree))
+    putStrLn(result (choice3 tree))
 --------------------------------------------------------------------------------------
 
      
@@ -204,21 +205,37 @@ remdel (a:r) = a: remdel r
 
 
 -- Nodes for Prototype: Setting Up Story ------------------------------------
+
+-- health, time, ice pick
 startingresources = Resources 10 8 1
 
-endnode = StoryLeaf "The end."
+endnode = StoryLeaf "Congratulations! You've made it back to base camp. It should be a smooth journey back home :)"
 
-dummypath = StoryPath endnode 3 5 0 0
+dummypath = (StoryPath endnode 3 5 0 0 "" "")
 
-firstchoice1 = StoryNode "You are at place 1" (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 1 10 0 0 "Any. This is an ending..." "...")
+almostAtBaseCamp = StoryNode "You keep on going and you see the base camp in the distance. You're almost there! But the winds are starting to pick up again! Do you decide to power through the wind, or wait until it passes?" (StoryPath endnode 1 2 1 (-2) "1: Power through (-2 health)" "Eager to get back, you decide to power through") (StoryPath endnode 2 2 2 (-2) "2: Wait it out (-2 hours)" "You decide not to risk it and wait it out before heading down") dummypath
 
-firstchoice2 = StoryNode "You are at place 2" (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...")
+battleYetIcePick = StoryNode "You use your ice pick to fight the yeti off and win, but it breaks in the process. This is your territory now!" (StoryPath almostAtBaseCamp 0 0 0 0 "1: Continue" "") dummypath dummypath
 
-firstchoice3 = StoryNode "You are at place 3" (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...") (StoryPath endnode 0 0 0 0 "Any. This is an ending..." "...")
+battleYetBareHands = StoryNode "You win! But not without a price. The yeti gravely injures you and you lose 5 health points!" (StoryPath almostAtBaseCamp 0 0 0 0 "1: Continue" "") dummypath dummypath
 
-startnode = StoryNode "You are on everest... lets get the fuck down" (StoryPath firstchoice1 0 0 1 (-5) "1. Jump" "Jumping...") (StoryPath firstchoice2 0 0 0 0 "2. Climb" "Climbing...") (StoryPath firstchoice3 0 0 0 0 "3. Run" "Running...")
+yetiEncounter = StoryNode "After walking for an hour, you find the creature the made those footprints! The Yeti! And you have entered his territory!" (StoryPath battleYetIcePick 3 1 3 (-1) "1: Battle yeti with ice pick (-1 ice pick)" "You wield your ice pick like a soldier ready to defend his homeland") (StoryPath battleYetBareHands 1 5 1 (-5) "2: Fight with your bare hands" "You hold up your fists and hope for the best") dummypath
 
+footPrintEncounter = StoryNode "While you continue your journey, you notice some very large, unhuman footprints. Do you continue to go in this direction and hope that you don't meet the creature that made them, or do you decide to spend an extra 3 hours taking the long way avoiding it?" (StoryPath yetiEncounter 2 1 2 (-1) "1. Continue in this direction (-1 hour)" "You decide to continue. Let's hope we don't find something bad.") (StoryPath  almostAtBaseCamp 2 3 2 (-3) "2: Take the long way around (-3 hours)" "You decide to go the long way around and avoid whatever there might have been.") dummypath
 
+continueThroughBlizzard = footPrintEncounter
+
+hideInCave = footPrintEncounter
+
+blizzardEncounter = StoryNode "You've been trudging along peacefully for some time but noticed that the winds have been picking up and the snow is falling hard. It's a blizzard! There's a cave nearby to seek shelter. Do you decide to wait out the storm in a cave, or do you keep going through it?" (StoryPath continueThroughBlizzard 1 5 1 (-5) "1. Continue through the blizzard (-5 health)" "You decide to continue through the blizzard in order to save time, but lost 5 health points because of the hypothermia. Was it worth it?") (StoryPath hideInCave 2 2 2 (-2) "2. Wait it out in the cave (-2 hours)" "You decided to wait it out in the cave for two hours. After you emerge, the weather seems to have cleared. Will you still have enough time to get down?") dummypath
+
+dontUseIcePick2 = blizzardEncounter
+
+useIcePick1 = blizzardEncounter
+
+beginJourney = StoryNode "You begin making your way down from the summit, and you soon encounter a steep descent, but it's still flat enough to walk. Do you use your ice pick?" (StoryPath useIcePick1 3 1 3 (-1) "1. Use ice pick (-1 ice pick)" "Your ice pick gave you an easier time on the way down, but you cracked the handle and it's no longer usable. Was it worth it?") (StoryPath dontUseIcePick2 2 1 2 (-1) "2. Don't use ice pick (-1 hour)" "You stumbled a bit on the way down and it took a bit longer, but you managed to get through. Maybe the ice pick will be useful later...") dummypath
+
+startnode = StoryNode "Congratulations! You've made it to the top of Mount Everest! But can you get down in one piece?" (StoryPath beginJourney 0 0 0 0 "1. Begin your descent" "Good luck...") dummypath dummypath
 
 main = do
     play (startingresources, startnode)
